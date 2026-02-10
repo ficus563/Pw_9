@@ -4,20 +4,38 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 )
 
-func handleRequest(w http.ResponseWriter, r *http.Request) {
-	// Читаем сообщение от клиента
-	body, _ := io.ReadAll(r.Body)
-	fmt.Printf("Получено сообщение: %s\n", string(body))
+var (
+	messages []string
+	mutex    sync.Mutex
+)
 
-	// Отправляем ответ клиенту
-	fmt.Fprintf(w, "Сервер получил твое сообщение!")
+func chatHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+	if r.Method == http.MethodPost {
+		body, _ := io.ReadAll(r.Body)
+		if len(body) > 0 {
+			mutex.Lock()
+			messages = append(messages, string(body))
+			mutex.Unlock()
+			fmt.Println("Новое сообщение:", string(body))
+		}
+		return
+	}
+
+
+	mutex.Lock()
+	for _, msg := range messages {
+		fmt.Fprintln(w, msg)
+	}
+	mutex.Unlock()
 }
 
 func main() {
-	http.HandleFunc("/", handleRequest)
-	fmt.Println("HTTP Сервер запущен на :8000")
-	// Слушаем порт 8000
+	http.HandleFunc("/", chatHandler)
+	fmt.Println("Чат-сервер запущен на :8000")
 	http.ListenAndServe(":8000", nil)
 }
