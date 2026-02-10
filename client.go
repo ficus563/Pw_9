@@ -12,12 +12,12 @@ import (
 )
 
 func main() {
-	url := "ссылкусюда"
+	url := "https://your-codespace-url-8000.app.github.dev/"
 
-	fmt.Print("Введите ваш ник: ")
+	fmt.Print("Ник: ")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
-	username := scanner.Text()
+	nickname := scanner.Text()
 
 	go func() {
 		lastCount := 0
@@ -25,25 +25,25 @@ func main() {
 			resp, err := http.Get(url)
 			if err == nil {
 				body, _ := io.ReadAll(resp.Body)
-				lines := strings.Split(string(body), "\n")
-				if len(lines) > lastCount {
-					for i := lastCount; i < len(lines)-1; i++ {
+				lines := strings.Split(strings.TrimSpace(string(body)), "\n")
+				if len(lines) > lastCount && lines[0] != "" {
+					for i := lastCount; i < len(lines); i++ {
 						fmt.Println(lines[i])
 					}
 					lastCount = len(lines)
 				}
 				resp.Body.Close()
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(time.Second)
 		}
 	}()
 
-
 	for scanner.Scan() {
 		text := scanner.Text()
-		if text == "" { continue }
-		
-		fullMsg := fmt.Sprintf("[%s]: %s", username, text)
-		http.Post(url, "text/plain", bytes.NewBufferString(fullMsg))
+		if text == "" {
+			continue
+		}
+		msg := fmt.Sprintf("[%s]: %s", nickname, text)
+		http.Post(url, "text/plain", bytes.NewBufferString(msg))
 	}
 }
