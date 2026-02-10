@@ -1,27 +1,49 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 func main() {
-	// СЮДА ВСТАВЬ ССЫЛКУ ИЗ CODESPACES (вкладка Ports -> Forwarded Address)
-	url := "https://твой-адрес-codespaces-8000.app.github.dev/"
+	url := "ссылкусюда"
 
-	message := []byte("Привет от клиента!")
-	
-	// Делаем запрос
-	resp, err := http.Post(url, "text/plain", bytes.NewBuffer(message))
-	if err != nil {
-		fmt.Println("Ошибка подключения:", err)
-		return
+	fmt.Print("Введите ваш ник: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	username := scanner.Text()
+
+	go func() {
+		lastCount := 0
+		for {
+			resp, err := http.Get(url)
+			if err == nil {
+				body, _ := io.ReadAll(resp.Body)
+				lines := strings.Split(string(body), "\n")
+				if len(lines) > lastCount {
+					for i := lastCount; i < len(lines)-1; i++ {
+						fmt.Println(lines[i])
+					}
+					lastCount = len(lines)
+				}
+				resp.Body.Close()
+			}
+			time.Sleep(2 * time.Second)
+		}
+	}()
+
+
+	for scanner.Scan() {
+		text := scanner.Text()
+		if text == "" { continue }
+		
+		fullMsg := fmt.Sprintf("[%s]: %s", username, text)
+		http.Post(url, "text/plain", bytes.NewBufferString(fullMsg))
 	}
-	defer resp.Body.Close()
-
-	// Читаем ответ от сервера
-	body, _ := io.ReadAll(resp.Body)
-	fmt.Println("Ответ сервера:", string(body))
 }
