@@ -12,8 +12,8 @@ var (
 	mutex    sync.Mutex
 )
 
-func chatHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+func handleChat(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodPost {
 		body, _ := io.ReadAll(r.Body)
@@ -21,21 +21,19 @@ func chatHandler(w http.ResponseWriter, r *http.Request) {
 			mutex.Lock()
 			messages = append(messages, string(body))
 			mutex.Unlock()
-			fmt.Println("Новое сообщение:", string(body))
+			fmt.Println(string(body))
 		}
 		return
 	}
 
-
 	mutex.Lock()
+	defer mutex.Unlock()
 	for _, msg := range messages {
 		fmt.Fprintln(w, msg)
 	}
-	mutex.Unlock()
 }
 
 func main() {
-	http.HandleFunc("/", chatHandler)
-	fmt.Println("Чат-сервер запущен на :8000")
+	http.HandleFunc("/", handleChat)
 	http.ListenAndServe(":8000", nil)
 }
